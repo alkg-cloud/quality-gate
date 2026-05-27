@@ -1,34 +1,31 @@
-# qg-core — Quality Gate Universal Engine
+# @quality-gate/core
 
-Language- and tool-agnostic engine for ratchet-based quality gates in GitHub PRs.
-Spec: [`docs/superpowers/specs/2026-05-27-quality-gate-design.md`](../../docs/superpowers/specs/2026-05-27-quality-gate-design.md).
+Language-agnostic Quality Gate engine for GitHub PRs. Ratchet-based metrics (coverage, lint, file size, duplication, security) stored on an orphan branch in your own repo — no external service required.
 
-## What it does
+Spec: [`docs/superpowers/specs/2026-05-27-quality-gate-design.md`](../../docs/superpowers/specs/2026-05-27-quality-gate-design.md)
 
-- Reads canonical JSON files produced by a **stack adapter** (you write this — see Plans 2–4 for React/Rails/Rust examples).
-- Compares against a frozen baseline stored on a `quality-metrics` orphan branch in your repo.
-- Posts a sticky PR comment, generates shields.io badges, writes a machine-readable report for AI babysit agents.
-- Auto-bootstraps the baseline on first merge to your default branch. No external service required.
+## Install
 
-## Install (CI)
-
-In the workflow:
-
-```yaml
-- name: Install qg_core
-  run: pip install qg-core
+```bash
+npm install --save-dev @quality-gate/core
+# or
+pnpm add -D @quality-gate/core
+# or, no install:
+npx @quality-gate/core@0.1.0 --help
 ```
 
 ## CLI
 
 ```
-qg collect       --input <dir> --output metrics.json
-qg compare       --metrics metrics.json --baseline baseline.json|NONE --config config.json --output report.json
-qg report        --metrics metrics.json --baseline baseline.json|NONE --report report.json --output pr-comment.md
-qg render-badges --metrics metrics.json --output-dir badges/
-qg baseline-payload --metrics metrics.json --config config.json --commit-sha <sha> --ref refs/heads/main --output baseline.json
-qg commit-message   --short-sha <sha> --before <pct>|NONE --after <pct>
-qg exit-code     --report report.json    # exits 0 if passed, 1 otherwise
+qg-core pr                --config <path> --output-dir <dir>
+qg-core update-baseline   --config <path> --output-dir <dir>
+qg-core collect           --input <dir>   --output metrics.json
+qg-core compare           --metrics metrics.json --baseline baseline.json|NONE --config config.json --output report.json
+qg-core report            --metrics metrics.json --baseline baseline.json|NONE --report report.json --output pr-comment.md
+qg-core render-badges     --metrics metrics.json --output-dir badges/
+qg-core baseline-payload  --metrics metrics.json --config config.json --commit-sha <sha> --ref refs/heads/main --output baseline.json
+qg-core commit-message    --short-sha <sha> --before <pct>|NONE --after <pct>
+qg-core exit-code         --report report.json
 ```
 
 ## Badge embed
@@ -41,7 +38,7 @@ qg exit-code     --report report.json    # exits 0 if passed, 1 otherwise
 ## For AI agents wiring this into a project
 
 1. Copy `templates/quality-gate.config.json` to repo root; set `default_branch` and `adapter.name`.
-2. Pick or write a stack adapter at `./.quality-gate/adapter.sh` (and `setup.sh`, `install.sh`). It MUST satisfy the [adapter contract](../../docs/superpowers/specs/2026-05-27-quality-gate-design.md#5-adapter-contract).
+2. Write a stack adapter at `./.quality-gate/adapter.sh` (and `setup.sh`, `install.sh`). It MUST satisfy the [adapter contract](../../docs/superpowers/specs/2026-05-27-quality-gate-design.md#5-adapter-contract).
 3. Copy both workflow files from `templates/workflows/` into `.github/workflows/`.
 4. Add the required branch protection check: `quality-gate / quality-gate`.
 5. Open the first PR. It bootstraps; merging it creates the orphan branch.
@@ -49,12 +46,20 @@ qg exit-code     --report report.json    # exits 0 if passed, 1 otherwise
 ## Development
 
 ```bash
-pip install -e .[dev]
-pytest                   # unit tests
-bash tests/integration/test_e2e_bootstrap.sh
-bash tests/integration/test_e2e_pr_passing.sh
-bash tests/integration/test_e2e_pr_failing.sh
-bash tests/integration/test_e2e_main_update.sh
-ruff check qg_core tests
-mypy qg_core
+pnpm install
+pnpm typecheck
+pnpm test
+pnpm build
+for t in tests/integration/e2e-*.sh; do bash "$t"; done
+```
+
+## Programmatic API
+
+```typescript
+import { collect, compare, renderPrComment, renderBadges } from "@quality-gate/core";
+
+const metrics = collect("./qg-output");
+const report  = compare(metrics, baseline, config);   // baseline can be null for bootstrap
+const md      = renderPrComment(metrics, baseline, report);
+const badges  = renderBadges(metrics);
 ```
