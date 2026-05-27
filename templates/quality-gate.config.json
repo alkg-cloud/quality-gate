@@ -14,8 +14,8 @@
     "security":    { "enabled": true, "block_severities": ["critical"], "warn_severities": ["high"] }
   },
   "adapter": {
-    "command": "npx --yes @quality-gate/adapter-react@0.1.0",
-    "name": "react",
+    "command": "./.quality-gate/adapter.sh",
+    "name": "REPLACE_WITH_STACK_NAME",
     "version": "0.1.0"
   }
 }
