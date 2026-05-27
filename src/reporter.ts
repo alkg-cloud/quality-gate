@@ -1,4 +1,4 @@
-import type { Baseline, ComparatorReport, Metrics, Regression, Warning } from "./types.js";
+import type { Baseline, ComparatorReport, Metrics, Regression } from "./types.js";
 
 const MARKER = "<!-- quality-gate-marker:v1 -->";
 

@@ -89,11 +89,13 @@ describe("renderPrComment", () => {
   });
 });
 
+interface BadgeJson { color: string; message: string }
+
 describe("renderBadges", () => {
   it("coverage badge is brightgreen at 85%", () => {
     const m = cleanMetrics();
     m.coverage = { lines_pct: 85, files: {} };
-    const b = JSON.parse(renderBadges(m)["coverage.json"]!);
+    const b = JSON.parse(renderBadges(m)["coverage.json"]!) as BadgeJson;
     expect(b.color).toBe("brightgreen");
     expect(b.message).toBe("85%");
   });
@@ -101,14 +103,14 @@ describe("renderBadges", () => {
   it("coverage badge is red at 7%", () => {
     const m = cleanMetrics();
     m.coverage = { lines_pct: 7, files: {} };
-    const b = JSON.parse(renderBadges(m)["coverage.json"]!);
+    const b = JSON.parse(renderBadges(m)["coverage.json"]!) as BadgeJson;
     expect(b.color).toBe("red");
   });
 
   it("composite quality badge is red when any metric is red", () => {
     const m = cleanMetrics();
     m.coverage = { lines_pct: 7, files: {} };
-    const q = JSON.parse(renderBadges(m)["quality.json"]!);
+    const q = JSON.parse(renderBadges(m)["quality.json"]!) as BadgeJson;
     expect(q.color).toBe("red");
   });
 

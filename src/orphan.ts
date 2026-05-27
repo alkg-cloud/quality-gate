@@ -76,8 +76,9 @@ export async function pushBaselineToOrphanBranch(args: PushBaselineArgs): Promis
       await projectGit.raw(["worktree", "add", "-B", args.branch, tempDir, `origin/${args.branch}`]);
       const existingBaseline = join(tempDir, "baseline.json");
       if (existsSync(existingBaseline)) {
-        const data = JSON.parse(await readFile(existingBaseline, "utf-8"));
-        if (data?.metrics?.coverage?.lines_pct !== undefined) coverageBefore = data.metrics.coverage.lines_pct;
+        const data: unknown = JSON.parse(await readFile(existingBaseline, "utf-8")) as unknown;
+        const blData = data as { metrics?: { coverage?: { lines_pct?: number } } };
+        if (blData?.metrics?.coverage?.lines_pct !== undefined) coverageBefore = blData.metrics.coverage.lines_pct;
       }
     } else {
       await projectGit.raw(["worktree", "add", "--orphan", "-B", args.branch, tempDir]);
@@ -90,8 +91,8 @@ export async function pushBaselineToOrphanBranch(args: PushBaselineArgs): Promis
 
     // Read fresh metrics + config
     const metricsPath = join(args.outputDir, "metrics.json");
-    const metricsData = JSON.parse(await readFile(metricsPath, "utf-8"));
-    const configData = JSON.parse(await readFile(args.configPath, "utf-8"));
+    const metricsData = JSON.parse(await readFile(metricsPath, "utf-8")) as Metrics;
+    const configData = JSON.parse(await readFile(args.configPath, "utf-8")) as QGConfig;
     const payload = buildBaselinePayload(metricsData, configData, {
       commitSha: args.commitSha, ref: args.ref,
     });

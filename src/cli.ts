@@ -6,7 +6,7 @@ import { collect } from "./collector.js";
 import { compare } from "./comparator.js";
 import { renderBadges, renderPrComment } from "./reporter.js";
 import { buildBaselinePayload, formatCommitMessage } from "./orphan.js";
-import type { Baseline, QGConfig, Metrics } from "./types.js";
+import type { Baseline, ComparatorReport, QGConfig, Metrics } from "./types.js";
 
 function writeJson(path: string, data: unknown): void {
   writeFileSync(path, JSON.stringify(data, null, 2) + "\n");
@@ -43,7 +43,7 @@ program.command("report")
   .action((opts: { metrics: string; baseline: string; report: string; output: string }) => {
     const metrics = JSON.parse(readFileSync(opts.metrics, "utf-8")) as Metrics;
     const baseline = opts.baseline === "NONE" ? null : (JSON.parse(readFileSync(opts.baseline, "utf-8")) as Baseline);
-    const report = JSON.parse(readFileSync(opts.report, "utf-8"));
+    const report = JSON.parse(readFileSync(opts.report, "utf-8")) as ComparatorReport;
     writeFileSync(opts.output, renderPrComment(metrics, baseline, report));
   });
 
@@ -81,7 +81,7 @@ program.command("commit-message")
 program.command("exit-code")
   .requiredOption("--report <path>")
   .action((opts: { report: string }) => {
-    const r = JSON.parse(readFileSync(opts.report, "utf-8"));
+    const r = JSON.parse(readFileSync(opts.report, "utf-8")) as ComparatorReport;
     process.exit(r.gate_passed ? 0 : 1);
   });
 

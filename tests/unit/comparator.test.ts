@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { compare } from "../../src/comparator.js";
-import type { Baseline, ComparatorReport, Metrics, QGConfig } from "../../src/types.js";
+import type { Baseline, Metrics, QGConfig } from "../../src/types.js";
 
 const META = { adapter: "stub", adapter_version: "0.1", tools: [] as string[] };
 

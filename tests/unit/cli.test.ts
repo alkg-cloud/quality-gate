@@ -52,7 +52,7 @@ describe("cli", () => {
     const metricsPath = join(dir, "metrics.json");
     const { code } = tsx(["collect", "--input", dir, "--output", metricsPath]);
     expect(code).toBe(0);
-    const data = JSON.parse(readFileSync(metricsPath, "utf-8"));
+    const data = JSON.parse(readFileSync(metricsPath, "utf-8")) as { coverage: { lines_pct: number } };
     expect(data.coverage.lines_pct).toBe(80);
   });
 
@@ -65,7 +65,7 @@ describe("cli", () => {
     tsx(["collect", "--input", dir, "--output", metricsPath]);
     const r = tsx(["compare", "--metrics", metricsPath, "--baseline", "NONE", "--config", configPath, "--output", reportPath]);
     expect(r.code).toBe(0);
-    const report = JSON.parse(readFileSync(reportPath, "utf-8"));
+    const report = JSON.parse(readFileSync(reportPath, "utf-8")) as { bootstrap: boolean; gate_passed: boolean };
     expect(report.bootstrap).toBe(true);
     expect(report.gate_passed).toBe(true);
   });

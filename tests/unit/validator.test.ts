@@ -6,7 +6,6 @@ import { join } from "node:path";
 import {
   ValidationError,
   validateAdapterOutput,
-  validateBaseline,
   validateConfig,
 } from "../../src/validator.js";
 

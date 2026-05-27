@@ -1,10 +1,9 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { collect } from "../collector.js";
 import { renderBadges } from "../reporter.js";
 import { pushBaselineToOrphanBranch } from "../orphan.js";
-import type { QGConfig } from "../types.js";
 
 export interface UpdateBaselineArgs {
   outputDir: string;
@@ -18,7 +17,6 @@ export interface UpdateBaselineArgs {
 }
 
 export async function runUpdateBaseline(args: UpdateBaselineArgs): Promise<{ pushed: boolean; reason?: string }> {
-  const config = JSON.parse(readFileSync(args.configPath, "utf-8")) as QGConfig;
   const metrics = collect(args.outputDir);
   writeFileSync(join(args.outputDir, "metrics.json"), JSON.stringify(metrics, null, 2) + "\n");
 
