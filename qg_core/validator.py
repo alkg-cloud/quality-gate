@@ -4,10 +4,9 @@ from __future__ import annotations
 import json
 from importlib import resources
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from jsonschema import Draft202012Validator
-from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
 
 _METRIC_SCHEMAS: Final[dict[str, str]] = {
     "coverage":    "coverage.schema.json",
@@ -23,12 +22,13 @@ class ValidationError(Exception):
     """Raised when JSON does not conform to its schema."""
 
 
-def _load_schema(name: str) -> dict:
+def _load_schema(name: str) -> dict[str, Any]:
     text = resources.files("qg_core.schemas").joinpath(name).read_text(encoding="utf-8")
-    return json.loads(text)
+    result: dict[str, Any] = json.loads(text)
+    return result
 
 
-def _collect_error_messages(errors: list) -> list[str]:
+def _collect_error_messages(errors: list[Any]) -> list[str]:
     """Recursively collect error messages, expanding oneOf/anyOf context errors."""
     msgs: list[str] = []
     for e in errors:
@@ -40,7 +40,7 @@ def _collect_error_messages(errors: list) -> list[str]:
     return msgs
 
 
-def _validate(data: dict, schema_filename: str) -> None:
+def _validate(data: dict[str, Any], schema_filename: str) -> None:
     schema = _load_schema(schema_filename)
     validator = Draft202012Validator(schema)
     errors = sorted(validator.iter_errors(data), key=lambda e: e.path)

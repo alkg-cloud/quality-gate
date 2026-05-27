@@ -1,8 +1,4 @@
-import json
-import subprocess
-from pathlib import Path
 
-import pytest
 
 from qg_core.orphan import build_baseline_payload, format_commit_message
 
@@ -17,7 +13,7 @@ def test_build_baseline_payload_includes_required_fields() -> None:
     }
     config = {"thresholds": {"MAX_FILE_LINES": 300, "MIN_NEW_FILE_COVERAGE": 60},
               "ratchet": {"strict": True, "epsilon": 0.0}}
-    payload = build_baseline_payload(pr_metrics, config, commit_sha="a" * 40, ref="refs/heads/main", now_iso="2026-05-27T12:00:00Z")
+    payload = build_baseline_payload(pr_metrics, config, commit_sha="a" * 40, ref="refs/heads/main", now_iso="2026-05-27T12:00:00Z") # noqa: E501
     assert payload["schema_version"] == 1
     assert payload["commit_sha"] == "a" * 40
     assert payload["metrics"]["coverage"]["files"] == {"a.py": 100.0}

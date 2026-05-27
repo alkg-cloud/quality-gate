@@ -19,7 +19,11 @@ def _table_row(name: str, baseline_val: str, pr_val: str, delta: str, status: st
     return f"| {name:<14}| {baseline_val:<9}| {pr_val:<8}| {delta:<7}| {status:<7}|"
 
 
-def _build_table(pr: dict, baseline: dict | None, report: dict) -> str:
+def _build_table(
+    pr: dict[str, Any],
+    baseline: dict[str, Any] | None,
+    report: dict[str, Any],
+) -> str:
     bl = baseline["metrics"] if baseline else {}
     failed_metrics = {r["metric"] for r in report["regressions"]}
 
@@ -58,17 +62,21 @@ def _build_table(pr: dict, baseline: dict | None, report: dict) -> str:
     if "security" in pr and "critical" in pr["security"]:
         p = pr["security"]["critical"]
         b = bl.get("security", {}).get("critical") if bl else None
-        rows.append(_table_row("Security", f"{b} crit" if b is not None else "—",
-                               f"{p} crit", "—",
-                               "❌" if any(r["metric"] == "security" for r in report["regressions"]) else "✅"))
+        sec_status = (
+            "❌" if any(r["metric"] == "security" for r in report["regressions"]) else "✅"
+        )
+        rows.append(_table_row(
+            "Security", f"{b} crit" if b is not None else "—",
+            f"{p} crit", "—", sec_status,
+        ))
     return "\n".join(rows)
 
 
-def _regression_sections(report: dict) -> str:
+def _regression_sections(report: dict[str, Any]) -> str:
     if not report["regressions"]:
         return ""
     parts = ["### Regressions\n"]
-    by_metric: dict[str, list[dict]] = {}
+    by_metric: dict[str, list[dict[str, Any]]] = {}
     for r in report["regressions"]:
         by_metric.setdefault(r["metric"], []).append(r)
     for metric in sorted(by_metric):
@@ -87,16 +95,21 @@ def _regression_sections(report: dict) -> str:
     return "\n".join(parts)
 
 
-def _warning_section(report: dict) -> str:
+def _warning_section(report: dict[str, Any]) -> str:
     if not report["warnings"]:
         return ""
     lines = ["### Warnings (non-blocking)\n"]
     for w in report["warnings"]:
-        lines.append(f"- **{w['metric']}**: {w['count']} `{w['severity']}` (Δ {_fmt_delta(w.get('delta', 0))})")
+        delta_str = _fmt_delta(w.get("delta", 0))
+        lines.append(f"- **{w['metric']}**: {w['count']} `{w['severity']}` (Δ {delta_str})")
     return "\n".join(lines) + "\n"
 
 
-def render_pr_comment(pr_metrics: dict, baseline: dict | None, report: dict) -> str:
+def render_pr_comment(
+    pr_metrics: dict[str, Any],
+    baseline: dict[str, Any] | None,
+    report: dict[str, Any],
+) -> str:
     meta = pr_metrics.get("_meta", {})
     adapter = f"{meta.get('adapter', '?')}@{meta.get('adapter_version', '?')}"
     tools = ", ".join(meta.get("tools", []))
@@ -107,7 +120,9 @@ def render_pr_comment(pr_metrics: dict, baseline: dict | None, report: dict) -> 
     else:
         header = "✅ PASSED" if report["gate_passed"] else "❌ FAILED"
         if baseline is not None:
-            baseline_line = f"> Baseline: `{_short_sha(baseline['commit_sha'])}` ({baseline['updated_at'][:10]})"
+            sha = _short_sha(baseline["commit_sha"])
+            date = baseline["updated_at"][:10]
+            baseline_line = f"> Baseline: `{sha}` ({date})"
         else:
             baseline_line = ""
 
@@ -122,19 +137,13 @@ def render_pr_comment(pr_metrics: dict, baseline: dict | None, report: dict) -> 
         "",
     ]
     if report.get("bootstrap"):
-        parts.append("⚙️ **Bootstrap pending** — baseline will be created on first merge to default branch. "
-                     "Critical security issues still block.\n")
+        parts.append(
+            "⚙️ **Bootstrap pending** — baseline will be created on first merge"
+            " to default branch. Critical security issues still block.\n"
+        )
     parts.append(_regression_sections(report))
     parts.append(_warning_section(report))
     return "\n".join(p for p in parts if p is not None).rstrip() + "\n"
-
-
-def _color_for_threshold(value: float, thresholds: list[tuple[float, str]]) -> str:
-    """thresholds sorted best→worst, each (boundary, color). First match wins (boundary inclusive)."""
-    for boundary, color in thresholds:
-        if value >= boundary if thresholds[0][1] == "brightgreen" else value <= boundary:
-            return color
-    return thresholds[-1][1]
 
 
 _COVERAGE_THRESHOLDS: list[tuple[float, str]] = [
@@ -176,7 +185,7 @@ def _shields(label: str, message: str, color: str) -> str:
     }, indent=2, sort_keys=True) + "\n"
 
 
-def render_badges(pr_metrics: dict) -> dict[str, str]:
+def render_badges(pr_metrics: dict[str, Any]) -> dict[str, str]:
     cov_pct = pr_metrics["coverage"]["lines_pct"]
     dup_pct = pr_metrics["duplication"]["pct"]
     lint_total = pr_metrics["lint"]["total"]
@@ -193,5 +202,9 @@ def render_badges(pr_metrics: dict) -> dict[str, str]:
         "coverage.json":    _shields("coverage", f"{cov_pct}%", cov_color),
         "duplication.json": _shields("duplication", f"{dup_pct}%", dup_color),
         "lint.json":        _shields("lint", str(lint_total), lint_color),
-        "quality.json":     _shields("quality", "passing" if composite_color == "brightgreen" else "issues", composite_color),
+        "quality.json":     _shields(
+            "quality",
+            "passing" if composite_color == "brightgreen" else "issues",
+            composite_color,
+        ),
     }

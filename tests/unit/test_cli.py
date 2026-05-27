@@ -16,14 +16,14 @@ def _config_data() -> dict:
         "metrics": {
             "coverage": {"enabled": True}, "duplication": {"enabled": True},
             "lint": {"enabled": True}, "file_size": {"enabled": True},
-            "security": {"enabled": True, "block_severities": ["critical"], "warn_severities": ["high"]},
+            "security": {"enabled": True, "block_severities": ["critical"], "warn_severities": ["high"]},  # noqa: E501
         },
         "adapter": {"command": "./a.sh", "name": "s", "version": "0.1"},
     }
 
 
 def _scaffold_outputs(d: Path) -> None:
-    _write(d / "coverage.json",     {"lines_pct": 80.0, "files": [{"path": "a.py", "lines_pct": 100.0}]})
+    _write(d / "coverage.json",     {"lines_pct": 80.0, "files": [{"path": "a.py", "lines_pct": 100.0}]})  # noqa: E501
     _write(d / "duplication.json",  {"pct": 1.0})
     _write(d / "lint.json",         {"total": 0, "by_file": []})
     _write(d / "file_size.json",    {"max_lines": 300, "violations": []})

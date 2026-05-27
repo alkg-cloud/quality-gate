@@ -11,10 +11,10 @@ def _write(d: Path, name: str, data: dict) -> None:
 
 
 def _scaffold(d: Path) -> None:
-    _write(d, "coverage.json",     {"lines_pct": 80.0, "files": [{"path": "a.py", "lines_pct": 100.0}, {"path": "b.py", "lines_pct": 60.0}]})
+    _write(d, "coverage.json",     {"lines_pct": 80.0, "files": [{"path": "a.py", "lines_pct": 100.0}, {"path": "b.py", "lines_pct": 60.0}]})  # noqa: E501
     _write(d, "duplication.json",  {"pct": 1.5, "clones": 3})
-    _write(d, "lint.json",         {"total": 7, "by_file": [{"path": "a.py", "count": 7}]})
-    _write(d, "file_size.json",    {"max_lines": 300, "violations": [{"path": "big.py", "lines": 999}]})
+    _write(d, "lint.json",         {"total": 7, "by_file": [{"path": "a.py", "count": 7}]}) 
+    _write(d, "file_size.json",    {"max_lines": 300, "violations": [{"path": "big.py", "lines": 999}]}) # noqa: E501
     _write(d, "security.json",     {"critical": 0, "high": 1, "moderate": 2, "low": 3})
     _write(d, "_meta.json",        {"adapter": "stub", "adapter_version": "0.1", "tools": ["fake"]})
 
@@ -46,7 +46,7 @@ def test_collect_preserves_skipped(tmp_qg_output: Path) -> None:
 def test_collect_fails_if_required_file_missing(tmp_qg_output: Path) -> None:
     _scaffold(tmp_qg_output)
     (tmp_qg_output / "coverage.json").unlink()
-    with pytest.raises(FileNotFoundError, match="coverage.json"):
+    with pytest.raises(FileNotFoundError, match=r"coverage\.json"):
         collect(tmp_qg_output)
 
 

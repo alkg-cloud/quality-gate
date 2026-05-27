@@ -15,7 +15,7 @@ class Regression(TypedDict, total=False):
     rules: list[str]
 
 
-def _is_skipped(metric_data: dict) -> bool:
+def _is_skipped(metric_data: dict[str, Any]) -> bool:
     return isinstance(metric_data, dict) and "_skipped" in metric_data
 
 
@@ -79,7 +79,11 @@ def _new_file_coverage_floor(floor: float,
     ]
 
 
-def compare(pr_metrics: dict, baseline: dict | None, config: dict) -> dict:
+def compare(
+    pr_metrics: dict[str, Any],
+    baseline: dict[str, Any] | None,
+    config: dict[str, Any],
+) -> dict[str, Any]:
     bootstrap = baseline is None
     if bootstrap:
         # Only run security blocker; skip ratchet entirely
@@ -106,6 +110,7 @@ def compare(pr_metrics: dict, baseline: dict | None, config: dict) -> dict:
             "bootstrap": True,
         }
 
+    assert baseline is not None  # bootstrap case returned above
     bl = baseline["metrics"]
     regressions = []
     warnings = []
@@ -114,20 +119,54 @@ def compare(pr_metrics: dict, baseline: dict | None, config: dict) -> dict:
     epsilon = config["ratchet"]["epsilon"] if not config["ratchet"]["strict"] else 0.0
 
     # Coverage global
-    if config["metrics"]["coverage"]["enabled"] and not _is_skipped(pr_metrics["coverage"]) and not _is_skipped(bl["coverage"]):
-        reg = _global_regression("coverage", bl["coverage"]["lines_pct"], pr_metrics["coverage"]["lines_pct"], "higher_better", epsilon)
-        if reg: regressions.append(reg)
-        else:   passing.append("coverage_global")
+    if (
+        config["metrics"]["coverage"]["enabled"]
+        and not _is_skipped(pr_metrics["coverage"])
+        and not _is_skipped(bl["coverage"])
+    ):
+        reg = _global_regression(
+            "coverage",
+            bl["coverage"]["lines_pct"],
+            pr_metrics["coverage"]["lines_pct"],
+            "higher_better",
+            epsilon,
+        )
+        if reg:
+            regressions.append(reg)
+        else:
+            passing.append("coverage_global")
 
     # Duplication global
-    if config["metrics"]["duplication"]["enabled"] and not _is_skipped(pr_metrics["duplication"]) and not _is_skipped(bl["duplication"]):
-        reg = _global_regression("duplication", bl["duplication"]["pct"], pr_metrics["duplication"]["pct"], "lower_better", epsilon)
-        if reg: regressions.append(reg)
-        else:   passing.append("duplication")
+    if (
+        config["metrics"]["duplication"]["enabled"]
+        and not _is_skipped(pr_metrics["duplication"])
+        and not _is_skipped(bl["duplication"])
+    ):
+        reg = _global_regression(
+            "duplication",
+            bl["duplication"]["pct"],
+            pr_metrics["duplication"]["pct"],
+            "lower_better",
+            epsilon,
+        )
+        if reg:
+            regressions.append(reg)
+        else:
+            passing.append("duplication")
 
     # Lint global (per-file added in Task 6)
-    if config["metrics"]["lint"]["enabled"] and not _is_skipped(pr_metrics["lint"]) and not _is_skipped(bl["lint"]):
-        reg = _global_regression("lint", float(bl["lint"]["total"]), float(pr_metrics["lint"]["total"]), "lower_better", epsilon)
+    if (
+        config["metrics"]["lint"]["enabled"]
+        and not _is_skipped(pr_metrics["lint"])
+        and not _is_skipped(bl["lint"])
+    ):
+        reg = _global_regression(
+            "lint",
+            float(bl["lint"]["total"]),
+            float(pr_metrics["lint"]["total"]),
+            "lower_better",
+            epsilon,
+        )
         if reg:
             reg["delta"] = int(reg["delta"])
             reg["baseline"] = int(reg["baseline"])
@@ -137,26 +176,41 @@ def compare(pr_metrics: dict, baseline: dict | None, config: dict) -> dict:
             passing.append("lint_global")
 
     # Lint per-file
-    if config["metrics"]["lint"]["enabled"] and not _is_skipped(pr_metrics["lint"]) and not _is_skipped(bl["lint"]):
+    if (
+        config["metrics"]["lint"]["enabled"]
+        and not _is_skipped(pr_metrics["lint"])
+        and not _is_skipped(bl["lint"])
+    ):
         regressions.extend(_per_file_regressions_count(
             "lint", bl["lint"]["by_file"], pr_metrics["lint"]["by_file"]))
 
     # File size per-file
-    if config["metrics"]["file_size"]["enabled"] and not _is_skipped(pr_metrics["file_size"]) and not _is_skipped(bl["file_size"]):
+    if (
+        config["metrics"]["file_size"]["enabled"]
+        and not _is_skipped(pr_metrics["file_size"])
+        and not _is_skipped(bl["file_size"])
+    ):
         regressions.extend(_per_file_size_regressions(
             config["thresholds"]["MAX_FILE_LINES"],
             bl["file_size"]["violations"],
             pr_metrics["file_size"]["violations"]))
 
     # Coverage new-file floor
-    if config["metrics"]["coverage"]["enabled"] and not _is_skipped(pr_metrics["coverage"]) and not _is_skipped(bl["coverage"]):
+    if (
+        config["metrics"]["coverage"]["enabled"]
+        and not _is_skipped(pr_metrics["coverage"])
+        and not _is_skipped(bl["coverage"])
+    ):
         regressions.extend(_new_file_coverage_floor(
             config["thresholds"]["MIN_NEW_FILE_COVERAGE"],
             bl["coverage"]["files"],
             pr_metrics["coverage"]["files"]))
 
     # Security: critical is absolute blocker; high is warning
-    if config["metrics"]["security"]["enabled"] and not _is_skipped(pr_metrics["security"]):
+    if (
+        config["metrics"]["security"]["enabled"]
+        and not _is_skipped(pr_metrics["security"])
+    ):
         sec = pr_metrics["security"]
         for sev in config["metrics"]["security"]["block_severities"]:
             if sec.get(sev, 0) > 0:

@@ -3,7 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from qg_core.validator import ValidationError, validate_adapter_output, validate_baseline, validate_config
+from qg_core.validator import (
+    ValidationError,
+    validate_adapter_output,
+    validate_config,
+)
 
 
 def _write(p: Path, data: dict) -> Path:
@@ -12,7 +16,7 @@ def _write(p: Path, data: dict) -> Path:
 
 
 def test_valid_coverage_passes(tmp_path: Path) -> None:
-    p = _write(tmp_path / "coverage.json", {"lines_pct": 80.0, "files": [{"path": "a.py", "lines_pct": 100.0}]})
+    p = _write(tmp_path / "coverage.json", {"lines_pct": 80.0, "files": [{"path": "a.py", "lines_pct": 100.0}]}) # noqa: E501
     validate_adapter_output("coverage", p)
 
 
@@ -44,7 +48,7 @@ def test_valid_config_passes(tmp_path: Path) -> None:
             "duplication": {"enabled": True},
             "lint":        {"enabled": True},
             "file_size":   {"enabled": True},
-            "security":    {"enabled": True, "block_severities": ["critical"], "warn_severities": ["high"]},
+            "security":    {"enabled": True, "block_severities": ["critical"], "warn_severities": ["high"]}, # noqa: E501
         },
         "adapter": {"command": "./adapter.sh", "name": "stub", "version": "0.1"},
     }
@@ -60,7 +64,7 @@ def test_strict_with_nonzero_epsilon_fails(tmp_path: Path) -> None:
         "metrics": {
             "coverage": {"enabled": True}, "duplication": {"enabled": True},
             "lint": {"enabled": True}, "file_size": {"enabled": True},
-            "security": {"enabled": True, "block_severities": ["critical"], "warn_severities": ["high"]},
+            "security": {"enabled": True, "block_severities": ["critical"], "warn_severities": ["high"]}, # noqa: E501
         },
         "adapter": {"command": "./a.sh", "name": "s", "version": "0.1"},
     }
