@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "qg://baseline.schema.json",
+  "type": "object",
+  "required": ["schema_version", "updated_at", "commit_sha", "ref", "metrics", "config_snapshot"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "commit_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "ref": { "type": "string", "minLength": 1 },
+    "metrics": {
+      "type": "object",
+      "required": ["coverage", "duplication", "lint", "file_size", "security"],
+      "additionalProperties": false,
+      "properties": {
+        "coverage": {
+          "type": "object",
+          "required": ["lines_pct", "files"],
+          "additionalProperties": false,
+          "properties": {
+            "lines_pct": { "type": "number" },
+            "files": {
+              "type": "object",
+              "additionalProperties": { "type": "number" }
+            },
+            "_skipped": { "type": "string" }
+          }
+        },
+        "duplication": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "pct": { "type": "number" },
+            "clones": { "type": "integer" },
+            "_skipped": { "type": "string" }
+          }
+        },
+        "lint": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "total": { "type": "integer" },
+            "by_file": { "type": "object", "additionalProperties": { "type": "integer" } },
+            "_skipped": { "type": "string" }
+          }
+        },
+        "file_size": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_lines": { "type": "integer" },
+            "violations": { "type": "object", "additionalProperties": { "type": "integer" } },
+            "_skipped": { "type": "string" }
+          }
+        },
+        "security": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "critical": { "type": "integer" },
+            "high": { "type": "integer" },
+            "moderate": { "type": "integer" },
+            "low": { "type": "integer" },
+            "_skipped": { "type": "string" }
+          }
+        }
+      }
+    },
+    "config_snapshot": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
