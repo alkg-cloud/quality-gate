@@ -1,0 +1,66 @@
+name: quality-gate
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: quality-gate-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Set up Python (for qg_core)
+        uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+
+      - name: Install qg_core
+        run: pip install git+https://github.com/REPLACE/quality-gate.git@v0.1.0#subdirectory=projects/quality-gate
+
+      - name: Setup stack
+        run: ./.quality-gate/setup.sh
+
+      - name: Install deps
+        run: ./.quality-gate/install.sh
+
+      - name: Run adapter
+        run: ./.quality-gate/adapter.sh
+        env:
+          QG_OUTPUT_DIR: ${{ runner.temp }}/qg
+          QG_MODE: pr
+          QG_CONFIG: ./quality-gate.config.json
+
+      - name: Fetch baseline
+        run: bash $(python3 -c "import qg_core, os; print(os.path.join(os.path.dirname(qg_core.__file__), 'scripts', 'fetch-baseline.sh'))") "${{ runner.temp }}/qg/baseline.json"
+
+      - name: Compare and report
+        run: bash $(python3 -c "import qg_core, os; print(os.path.join(os.path.dirname(qg_core.__file__), 'scripts', 'compare-and-report.sh'))")
+        env:
+          QG_OUTPUT_DIR: ${{ runner.temp }}/qg
+          QG_CONFIG: ./quality-gate.config.json
+
+      - name: Post sticky PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: quality-gate-marker-v1
+          path: ${{ runner.temp }}/qg/pr-comment.md
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-gate-report
+          path: ${{ runner.temp }}/qg
+
+      - name: Fail if gate failed
+        run: bash $(python3 -c "import qg_core, os; print(os.path.join(os.path.dirname(qg_core.__file__), 'scripts', 'exit-code.sh'))")
+        env:
+          QG_OUTPUT_DIR: ${{ runner.temp }}/qg

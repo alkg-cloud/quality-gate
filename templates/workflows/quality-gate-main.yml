@@ -1,0 +1,45 @@
+name: quality-gate-baseline
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: quality-gate-main
+  cancel-in-progress: false
+
+jobs:
+  update-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+
+      - name: Install qg_core
+        run: pip install git+https://github.com/REPLACE/quality-gate.git@v0.1.0#subdirectory=projects/quality-gate
+
+      - name: Setup stack
+        run: ./.quality-gate/setup.sh
+
+      - name: Install deps
+        run: ./.quality-gate/install.sh
+
+      - name: Run adapter
+        run: ./.quality-gate/adapter.sh
+        env:
+          QG_OUTPUT_DIR: ${{ runner.temp }}/qg
+          QG_MODE: main
+          QG_CONFIG: ./quality-gate.config.json
+
+      - name: Update orphan branch
+        run: bash $(python3 -c "import qg_core, os; print(os.path.join(os.path.dirname(qg_core.__file__), 'scripts', 'update-orphan-branch.sh'))")
+        env:
+          QG_OUTPUT_DIR: ${{ runner.temp }}/qg
+          QG_CONFIG: ./quality-gate.config.json
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "default_branch": "main",
+  "thresholds": {
+    "MAX_FILE_LINES": 300,
+    "MIN_NEW_FILE_COVERAGE": 60
+  },
+  "ratchet": {
+    "strict": true,
+    "epsilon": 0.0
+  },
+  "metrics": {
+    "coverage":    { "enabled": true },
+    "duplication": { "enabled": true },
+    "lint":        { "enabled": true },
+    "file_size":   { "enabled": true },
+    "security":    {
+      "enabled": true,
+      "block_severities": ["critical"],
+      "warn_severities":  ["high"]
+    }
+  },
+  "adapter": {
+    "command": "./.quality-gate/adapter.sh",
+    "name": "REPLACE_WITH_STACK_NAME",
+    "version": "0.1"
+  }
+}
