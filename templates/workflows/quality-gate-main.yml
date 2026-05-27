@@ -16,18 +16,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
 
-      - name: Setup stack
-        run: ./.quality-gate/setup.sh
-
-      - name: Install deps
-        run: ./.quality-gate/install.sh
+      - name: Read adapter command from config
+        id: cfg
+        run: |
+          adapter_cmd=$(node -e "console.log(JSON.parse(require('fs').readFileSync('./quality-gate.config.json','utf-8')).adapter.command)")
+          echo "adapter_cmd=$adapter_cmd" >> "$GITHUB_OUTPUT"
 
       - name: Run adapter
-        run: ./.quality-gate/adapter.sh
+        run: ${{ steps.cfg.outputs.adapter_cmd }}
         env:
           QG_OUTPUT_DIR: ${{ runner.temp }}/qg
           QG_MODE: main
