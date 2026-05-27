@@ -85,6 +85,48 @@ program.command("exit-code")
     process.exit(r.gate_passed ? 0 : 1);
   });
 
+program.command("pr")
+  .description("Run PR-mode gate: collect → compare → report → badges → exit code")
+  .requiredOption("--config <path>")
+  .requiredOption("--output-dir <dir>")
+  .option("--branch <name>", "orphan branch name", "quality-metrics")
+  .option("--repo-path <dir>", "project repo path", process.cwd())
+  .action(async (opts: { config: string; outputDir: string; branch: string; repoPath: string }) => {
+    const { runPr } = await import("./commands/pr.js");
+    const { gatePassed } = await runPr({
+      configPath: opts.config, outputDir: opts.outputDir, branch: opts.branch, repoPath: opts.repoPath,
+    });
+    process.exit(gatePassed ? 0 : 1);
+  });
+
+program.command("update-baseline")
+  .description("Update the orphan branch with a new baseline after main-branch merge")
+  .requiredOption("--config <path>")
+  .requiredOption("--output-dir <dir>")
+  .option("--branch <name>", "orphan branch name", "quality-metrics")
+  .option("--repo-path <dir>", "project repo path", process.cwd())
+  .option("--readme-template <path>", "orphan branch README template", "")
+  .action(async (opts: { config: string; outputDir: string; branch: string; repoPath: string; readmeTemplate: string }) => {
+    const { runUpdateBaseline } = await import("./commands/update-baseline.js");
+    const token = process.env.GITHUB_TOKEN;
+    const repo  = process.env.GITHUB_REPOSITORY;
+    const sha   = process.env.GITHUB_SHA;
+    const ref   = process.env.GITHUB_REF ?? "refs/heads/main";
+    if (!token || !repo || !sha) {
+      console.error("update-baseline requires GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_SHA env vars");
+      process.exit(2);
+    }
+    const remoteUrl = `https://x-access-token:${token}@github.com/${repo}.git`;
+    const readme = opts.readmeTemplate
+      ? readFileSync(opts.readmeTemplate, "utf-8")
+      : "# quality-metrics\n\nAuto-managed by Quality Gate. Do not edit by hand.\n";
+    const res = await runUpdateBaseline({
+      configPath: opts.config, outputDir: opts.outputDir, branch: opts.branch,
+      repoPath: opts.repoPath, commitSha: sha, ref, remoteUrl, readmeContent: readme,
+    });
+    if (!res.pushed) console.log(`no changes (${res.reason})`);
+  });
+
 program.parseAsync(process.argv).catch((e) => {
   console.error(e);
   process.exit(2);
