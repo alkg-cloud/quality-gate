@@ -60,3 +60,48 @@ def test_renderer_is_deterministic() -> None:
           "security": {"critical": 0, "high": 0, "moderate": 0, "low": 0}, "_meta": _meta()}
     baseline = {"metrics": pr, "commit_sha": "a" * 40, "updated_at": "2026-05-26T00:00:00Z"}
     assert render_pr_comment(pr, baseline, report) == render_pr_comment(pr, baseline, report)
+
+
+import json
+
+from qg_core.reporter import render_badges
+
+
+def test_coverage_badge_green_when_above_80() -> None:
+    badges = render_badges({"coverage": {"lines_pct": 85.0, "files": {}},
+                            "duplication": {"pct": 1.0},
+                            "lint": {"total": 0, "by_file": {}},
+                            "file_size": {"max_lines": 300, "violations": {}},
+                            "security": {"critical": 0, "high": 0, "moderate": 0, "low": 0}})
+    cov = json.loads(badges["coverage.json"])
+    assert cov["color"] == "brightgreen"
+    assert cov["message"] == "85.0%"
+
+
+def test_coverage_badge_red_when_below_20() -> None:
+    badges = render_badges({"coverage": {"lines_pct": 7.0, "files": {}},
+                            "duplication": {"pct": 1.0},
+                            "lint": {"total": 0, "by_file": {}},
+                            "file_size": {"max_lines": 300, "violations": {}},
+                            "security": {"critical": 0, "high": 0, "moderate": 0, "low": 0}})
+    cov = json.loads(badges["coverage.json"])
+    assert cov["color"] == "red"
+
+
+def test_quality_badge_composite_red_when_any_red() -> None:
+    badges = render_badges({"coverage": {"lines_pct": 7.0, "files": {}},
+                            "duplication": {"pct": 1.0},
+                            "lint": {"total": 0, "by_file": {}},
+                            "file_size": {"max_lines": 300, "violations": {}},
+                            "security": {"critical": 0, "high": 0, "moderate": 0, "low": 0}})
+    q = json.loads(badges["quality.json"])
+    assert q["color"] == "red"
+
+
+def test_all_four_badge_files_present() -> None:
+    badges = render_badges({"coverage": {"lines_pct": 80.0, "files": {}},
+                            "duplication": {"pct": 1.0},
+                            "lint": {"total": 0, "by_file": {}},
+                            "file_size": {"max_lines": 300, "violations": {}},
+                            "security": {"critical": 0, "high": 0, "moderate": 0, "low": 0}})
+    assert set(badges) == {"coverage.json", "duplication.json", "lint.json", "quality.json"}

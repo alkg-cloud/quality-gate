@@ -127,3 +127,71 @@ def render_pr_comment(pr_metrics: dict, baseline: dict | None, report: dict) -> 
     parts.append(_regression_sections(report))
     parts.append(_warning_section(report))
     return "\n".join(p for p in parts if p is not None).rstrip() + "\n"
+
+
+def _color_for_threshold(value: float, thresholds: list[tuple[float, str]]) -> str:
+    """thresholds sorted best→worst, each (boundary, color). First match wins (boundary inclusive)."""
+    for boundary, color in thresholds:
+        if value >= boundary if thresholds[0][1] == "brightgreen" else value <= boundary:
+            return color
+    return thresholds[-1][1]
+
+
+_COVERAGE_THRESHOLDS: list[tuple[float, str]] = [
+    (80, "brightgreen"), (60, "yellowgreen"), (40, "yellow"), (20, "orange"), (0, "red"),
+]
+_DUPLICATION_THRESHOLDS: list[tuple[float, str]] = [
+    (2, "brightgreen"), (5, "yellow"), (10, "orange"), (1000, "red"),
+]
+_LINT_THRESHOLDS: list[tuple[int, str]] = [
+    (0, "brightgreen"), (10, "yellow"), (50, "orange"), (1_000_000, "red"),
+]
+
+
+def _coverage_color(pct: float) -> str:
+    for boundary, color in _COVERAGE_THRESHOLDS:
+        if pct >= boundary:
+            return color
+    return "red"
+
+
+def _duplication_color(pct: float) -> str:
+    for boundary, color in _DUPLICATION_THRESHOLDS:
+        if pct <= boundary:
+            return color
+    return "red"
+
+
+def _lint_color(total: int) -> str:
+    for boundary, color in _LINT_THRESHOLDS:
+        if total <= boundary:
+            return color
+    return "red"
+
+
+def _shields(label: str, message: str, color: str) -> str:
+    import json as _json
+    return _json.dumps({
+        "schemaVersion": 1, "label": label, "message": message, "color": color,
+    }, indent=2, sort_keys=True) + "\n"
+
+
+def render_badges(pr_metrics: dict) -> dict[str, str]:
+    cov_pct = pr_metrics["coverage"]["lines_pct"]
+    dup_pct = pr_metrics["duplication"]["pct"]
+    lint_total = pr_metrics["lint"]["total"]
+
+    cov_color = _coverage_color(cov_pct)
+    dup_color = _duplication_color(dup_pct)
+    lint_color = _lint_color(lint_total)
+
+    colors = [cov_color, dup_color, lint_color]
+    rank = {"brightgreen": 0, "yellowgreen": 1, "yellow": 2, "orange": 3, "red": 4}
+    composite_color = max(colors, key=lambda c: rank.get(c, 4))
+
+    return {
+        "coverage.json":    _shields("coverage", f"{cov_pct}%", cov_color),
+        "duplication.json": _shields("duplication", f"{dup_pct}%", dup_color),
+        "lint.json":        _shields("lint", str(lint_total), lint_color),
+        "quality.json":     _shields("quality", "passing" if composite_color == "brightgreen" else "issues", composite_color),
+    }
