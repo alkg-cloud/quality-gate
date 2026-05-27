@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-05-26T00:00:00Z",
+  "commit_sha": "0000000000000000000000000000000000000000",
+  "ref": "refs/heads/main",
+  "metrics": {
+    "coverage":    { "lines_pct": 80.0, "files": { "src/a.js": 100.0, "src/b.js": 60.0 } },
+    "duplication": { "pct": 1.5 },
+    "lint":        { "total": 0, "by_file": {} },
+    "file_size":   { "max_lines": 300, "violations": {} },
+    "security":    { "critical": 0, "high": 0, "moderate": 0, "low": 0 }
+  },
+  "config_snapshot": { "MAX_FILE_LINES": 300, "MIN_NEW_FILE_COVERAGE": 60, "ratchet_strict": true }
+}
