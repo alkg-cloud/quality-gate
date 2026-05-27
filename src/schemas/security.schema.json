@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "qg://security.schema.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["critical", "high", "moderate", "low"],
+      "additionalProperties": false,
+      "properties": {
+        "critical": { "type": "integer", "minimum": 0 },
+        "high":     { "type": "integer", "minimum": 0 },
+        "moderate": { "type": "integer", "minimum": 0 },
+        "low":      { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["_skipped"],
+      "additionalProperties": false,
+      "properties": { "_skipped": { "type": "string", "minLength": 1 } }
+    }
+  ]
+}

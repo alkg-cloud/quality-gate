@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "qg://coverage.schema.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["lines_pct", "files"],
+      "additionalProperties": false,
+      "properties": {
+        "lines_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "lines_pct"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "lines_pct": { "type": "number", "minimum": 0, "maximum": 100 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["_skipped"],
+      "additionalProperties": false,
+      "properties": { "_skipped": { "type": "string", "minLength": 1 } }
+    }
+  ]
+}
