@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "qg://duplication.schema.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["pct"],
+      "additionalProperties": false,
+      "properties": {
+        "pct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "clones": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["_skipped"],
+      "additionalProperties": false,
+      "properties": { "_skipped": { "type": "string", "minLength": 1 } }
+    }
+  ]
+}
