@@ -18,12 +18,8 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
 
-      - name: Set up Python (for qg_core)
-        uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-
-      - name: Install qg_core
-        run: pip install git+https://github.com/REPLACE/quality-gate.git@v0.1.0#subdirectory=projects/quality-gate
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
 
       - name: Setup stack
         run: ./.quality-gate/setup.sh
@@ -38,14 +34,8 @@ jobs:
           QG_MODE: pr
           QG_CONFIG: ./quality-gate.config.json
 
-      - name: Fetch baseline
-        run: bash $(python3 -c "import qg_core, os; print(os.path.join(os.path.dirname(qg_core.__file__), 'scripts', 'fetch-baseline.sh'))") "${{ runner.temp }}/qg/baseline.json"
-
-      - name: Compare and report
-        run: bash $(python3 -c "import qg_core, os; print(os.path.join(os.path.dirname(qg_core.__file__), 'scripts', 'compare-and-report.sh'))")
-        env:
-          QG_OUTPUT_DIR: ${{ runner.temp }}/qg
-          QG_CONFIG: ./quality-gate.config.json
+      - name: Run quality gate
+        run: npx --yes @quality-gate/core@0.1.0 pr --config ./quality-gate.config.json --output-dir ${{ runner.temp }}/qg
 
       - name: Post sticky PR comment
         uses: marocchino/sticky-pull-request-comment@v2
@@ -59,8 +49,3 @@ jobs:
         with:
           name: quality-gate-report
           path: ${{ runner.temp }}/qg
-
-      - name: Fail if gate failed
-        run: bash $(python3 -c "import qg_core, os; print(os.path.join(os.path.dirname(qg_core.__file__), 'scripts', 'exit-code.sh'))")
-        env:
-          QG_OUTPUT_DIR: ${{ runner.temp }}/qg
