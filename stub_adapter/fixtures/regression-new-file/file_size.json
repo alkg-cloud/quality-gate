@@ -1,0 +1,9 @@
+{
+  "max_lines": 300,
+  "violations": [
+    {
+      "lines": 500,
+      "path": "src/new.js"
+    }
+  ]
+}

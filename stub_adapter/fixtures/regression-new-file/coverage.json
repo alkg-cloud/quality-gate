@@ -1,0 +1,17 @@
+{
+  "files": [
+    {
+      "lines_pct": 100.0,
+      "path": "src/a.js"
+    },
+    {
+      "lines_pct": 60.0,
+      "path": "src/b.js"
+    },
+    {
+      "lines_pct": 42.0,
+      "path": "src/new.js"
+    }
+  ],
+  "lines_pct": 80.0
+}

@@ -1,0 +1,7 @@
+{
+  "adapter": "stub",
+  "adapter_version": "0.1",
+  "tools": [
+    "fixture: security-critical"
+  ]
+}
