@@ -79,10 +79,36 @@ def _new_file_coverage_floor(floor: float,
     ]
 
 
-def compare(pr_metrics: dict, baseline: dict, config: dict) -> dict:
+def compare(pr_metrics: dict, baseline: dict | None, config: dict) -> dict:
+    bootstrap = baseline is None
+    if bootstrap:
+        # Only run security blocker; skip ratchet entirely
+        regressions: list[Regression] = []
+        warnings: list[dict[str, Any]] = []
+        sec = pr_metrics.get("security", {})
+        if isinstance(sec, dict) and not _is_skipped(sec):
+            for sev in config["metrics"]["security"]["block_severities"]:
+                if sec.get(sev, 0) > 0:
+                    regressions.append({
+                        "metric": "security",
+                        "scope": "critical_blocker" if sev == "critical" else f"{sev}_blocker",
+                        "actual": sec[sev], "baseline": 0, "delta": sec[sev],
+                    })
+            for sev in config["metrics"]["security"]["warn_severities"]:
+                n = sec.get(sev, 0)
+                if n > 0:
+                    warnings.append({"metric": "security", "severity": sev, "count": n, "delta": n})
+        return {
+            "gate_passed": len(regressions) == 0,
+            "regressions": regressions,
+            "warnings": warnings,
+            "passing": [],
+            "bootstrap": True,
+        }
+
     bl = baseline["metrics"]
-    regressions: list[Regression] = []
-    warnings: list[dict[str, Any]] = []
+    regressions = []
+    warnings = []
     passing: list[str] = []
 
     epsilon = config["ratchet"]["epsilon"] if not config["ratchet"]["strict"] else 0.0
@@ -154,4 +180,5 @@ def compare(pr_metrics: dict, baseline: dict, config: dict) -> dict:
         "regressions": regressions,
         "warnings": warnings,
         "passing": passing,
+        "bootstrap": False,
     }

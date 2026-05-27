@@ -136,3 +136,31 @@ def test_new_file_coverage_floor_enforced() -> None:
           "_meta": {"adapter": "stub", "adapter_version": "0.1", "tools": []}}
     report = compare(pr, bl, _config())
     assert any(r["metric"] == "coverage" and r["scope"] == "new_file_floor" and r["file"] == "new.py" for r in report["regressions"])
+
+
+def test_bootstrap_mode_passes_when_no_baseline() -> None:
+    pr = {
+        "coverage":    {"lines_pct": 1.0, "files": {"a.py": 0.0}},
+        "duplication": {"pct": 50.0},
+        "lint":        {"total": 1000, "by_file": {"a.py": 1000}},
+        "file_size":   {"max_lines": 300, "violations": {"a.py": 9999}},
+        "security":    {"critical": 0, "high": 5, "moderate": 0, "low": 0},
+        "_meta":       {"adapter": "stub", "adapter_version": "0.1", "tools": []},
+    }
+    report = compare(pr, baseline=None, config=_config())
+    assert report["gate_passed"] is True
+    assert report["bootstrap"] is True
+
+
+def test_bootstrap_mode_still_blocks_critical_security() -> None:
+    pr = {
+        "coverage":    {"lines_pct": 1.0, "files": {}},
+        "duplication": {"pct": 1.0},
+        "lint":        {"total": 0, "by_file": {}},
+        "file_size":   {"max_lines": 300, "violations": {}},
+        "security":    {"critical": 1, "high": 0, "moderate": 0, "low": 0},
+        "_meta":       {"adapter": "stub", "adapter_version": "0.1", "tools": []},
+    }
+    report = compare(pr, baseline=None, config=_config())
+    assert report["gate_passed"] is False
+    assert report["bootstrap"] is True
