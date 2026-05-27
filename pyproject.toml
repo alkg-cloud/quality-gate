@@ -22,6 +22,9 @@ select = ["E", "F", "I", "B", "UP", "N", "ANN", "RUF"]
 strict = true
 python_version = "3.11"
 
+[tool.setuptools.package-data]
+qg_core = ["schemas/*.json", "scripts/*.sh"]
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
