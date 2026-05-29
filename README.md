@@ -4,13 +4,33 @@ Language-agnostic Quality Gate engine for GitHub PRs. Ratchet-based metrics (cov
 
 ## Install
 
+This engine is not published to npm. Install it from source with the official
+nvm/rustup-style script — it fetches a pinned tarball, builds it, and puts a
+`qg-core` shim on your PATH:
+
 ```bash
-npm install --save-dev @quality-gate/core
-# or
-pnpm add -D @quality-gate/core
-# or, no install:
-npx @quality-gate/core@0.1.0 --help
+curl -fsSL https://raw.githubusercontent.com/alkg-cloud/quality-gate/main/install.sh | bash
 ```
+
+Pin a ref for reproducible installs (recommended for CI):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/alkg-cloud/quality-gate/main/install.sh | QG_REF=main bash
+```
+
+| Env var          | Default                     | Purpose                                  |
+|------------------|-----------------------------|------------------------------------------|
+| `QG_REF`         | `main`                      | git ref (tag/branch/sha) to install      |
+| `QG_HOME`        | `$HOME/.quality-gate`       | install root (cached per-ref)            |
+| `QG_REPO`        | `alkg-cloud/quality-gate`   | source `owner/repo`                      |
+| `QG_FORCE`       | _unset_                     | set to `1` to reinstall a cached ref     |
+
+The script caches each ref under `$QG_HOME`, so re-running it for the same ref is a
+no-op. In GitHub Actions it appends the shim's bin dir to `$GITHUB_PATH`, so any
+**subsequent** step can call `qg-core ...` directly. For speed, pair it with
+`actions/cache` keyed on `QG_REF`; because `main` is mutable, pin `QG_REF` to a tag
+or commit SHA in CI so the cache invalidates when the engine changes (or set
+`QG_FORCE=1` to rebuild). Locally, follow the printed `export PATH=...` hint.
 
 ## CLI
 
@@ -33,11 +53,16 @@ qg-core exit-code         --report report.json
 ![quality](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<owner>/<repo>/quality-metrics/badges/quality.json)
 ```
 
+A per-metric badge (`coverage.json`, `duplication.json`, `lint.json`) is only published
+when that metric is live; if a workspace marks it `_skipped`, the file is removed and its
+embed will 404. The composite `quality.json` is always published, so embed that if you
+want a badge that never breaks.
+
 ## For AI agents wiring this into a project
 
 1. Copy `templates/quality-gate.config.json` to repo root; set `default_branch` and `adapter.name`. Leave `branch` as `quality-metrics` unless this is a monorepo (see below).
 2. Write a stack adapter at `./.quality-gate/adapter.sh` (and `setup.sh`, `install.sh`). It MUST satisfy the [adapter contract](./templates/adapters/README.md#adapter-contract-recap).
-3. Copy both workflow files from `templates/workflows/` into `.github/workflows/`.
+3. Copy both workflow files from `templates/workflows/` into `.github/workflows/`. They install the engine via the `curl … install.sh | bash` step above (no npm registry needed) and then call the `qg-core` shim.
 4. Add the required branch protection check: `quality-gate / quality-gate` (single-workspace default — see "Multi-workspace projects" below for monorepo check names).
 5. Open the first PR. It bootstraps; merging it creates the orphan branch.
 
@@ -64,11 +89,16 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
+      - name: Install quality-gate engine
+        shell: bash   # bash -o pipefail: a failed curl fails the step instead of passing green
+        run: curl -fsSL https://raw.githubusercontent.com/alkg-cloud/quality-gate/main/install.sh | bash
+        env:
+          QG_REF: main   # pin a tag/sha for reproducible CI
       # Copy the "Read adapter command from config" + "Run adapter" steps from the
       # PR template here, passing QG_CONFIG=./apps/${{ matrix.workspace }}/quality-gate.config.json
       # so the adapter writes metrics before the gate runs.
       - name: Run quality gate
-        run: npx --yes @quality-gate/core@0.1.0 pr --config ./apps/${{ matrix.workspace }}/quality-gate.config.json --output-dir ${{ runner.temp }}/qg
+        run: qg-core pr --config ./apps/${{ matrix.workspace }}/quality-gate.config.json --output-dir ${{ runner.temp }}/qg
 ```
 
 Each workspace's config declares its own `branch`, so the matrix slot needs no branch knowledge. (Alternatively, copy the workflow per workspace and let each point at its own config.)

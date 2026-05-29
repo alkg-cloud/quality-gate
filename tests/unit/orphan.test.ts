@@ -75,4 +75,10 @@ describe("formatCommitMessage", () => {
     const m = formatCommitMessage({ shortSha: "abc1234", coverageBefore: null, coverageAfter: 7.0 });
     expect(m.toLowerCase()).toContain("bootstrap");
   });
+
+  it("renders n/a (not 0%) when coverage is skipped", () => {
+    const m = formatCommitMessage({ shortSha: "abc1234", coverageBefore: 7.0, coverageAfter: null });
+    expect(m).toContain("7% → n/a");
+    expect(m).not.toContain("0%");
+  });
 });

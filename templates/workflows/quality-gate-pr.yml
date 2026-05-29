@@ -21,6 +21,15 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
 
+      - name: Install quality-gate engine
+        # shell: bash makes the runner use `bash -o pipefail`, so a failed curl
+        # (the default `bash -e` has no pipefail) doesn't pass as a green step.
+        shell: bash
+        run: curl -fsSL https://raw.githubusercontent.com/alkg-cloud/quality-gate/main/install.sh | bash
+        env:
+          # Pin a tag or commit SHA for reproducible CI; defaults to main.
+          QG_REF: main
+
       - name: Read adapter command from config
         id: cfg
         run: |
@@ -35,7 +44,7 @@ jobs:
           QG_CONFIG: ./quality-gate.config.json
 
       - name: Run quality gate
-        run: npx --yes @quality-gate/core@0.1.0 pr --config ./quality-gate.config.json --output-dir ${{ runner.temp }}/qg
+        run: qg-core pr --config ./quality-gate.config.json --output-dir ${{ runner.temp }}/qg
 
       - name: Post sticky PR comment
         uses: marocchino/sticky-pull-request-comment@v2
