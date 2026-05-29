@@ -50,15 +50,22 @@ The default setup assumes one workspace per repo. For monorepos with multiple wo
 - **orphan branch** — override the default via the `QG_BRANCH` env var in the workflow (e.g. `quality-metrics-web`)
 - branch-protection required check — one per workflow run / matrix slot
 
-The shipped workflow templates expose `QG_BRANCH` at the workflow level (defaulting to `quality-metrics`) and pass it through to `qg-core pr` / `qg-core update-baseline` via `--branch "$QG_BRANCH"`. Set it per copy of the workflow, or override it per matrix slot:
+The shipped workflow templates expose `QG_BRANCH` at the workflow level (defaulting to `quality-metrics`) and pass it through to `qg-core pr` / `qg-core update-baseline` via `--branch "$QG_BRANCH"`. Either copy the workflow per workspace and set the workflow-level `QG_BRANCH` in each copy, or run one matrixed workflow and set `QG_BRANCH` **at the job level** so it can read the matrix slot:
 
 ```yaml
-strategy:
-  matrix:
-    workspace: [api, web, mobile]
-env:
-  QG_BRANCH: quality-metrics-${{ matrix.workspace }}
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        workspace: [api, web, mobile]
+    env:
+      QG_BRANCH: quality-metrics-${{ matrix.workspace }}   # job-level: matrix context resolves here
+    steps:
+      # ... same steps as the template ...
 ```
+
+> The `matrix` context is only available inside the job that declares `strategy.matrix`. If you put `QG_BRANCH: quality-metrics-${{ matrix.workspace }}` in the workflow-level `env:` block (as in the templates), it resolves to an empty suffix and every slot writes to the same branch — defeating the per-workspace split.
 
 Required-check naming follows GitHub's `<workflow_name> / <job_name>` format. With a matrix, expect names like `quality-gate / quality-gate (api)`, `quality-gate / quality-gate (web)`, etc. With separate workflow files per workspace, each workflow's `name:` becomes the prefix. Add **one required check per workspace** to branch protection.
 
