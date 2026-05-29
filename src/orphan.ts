@@ -44,15 +44,16 @@ export function buildBaselinePayload(metrics: Metrics, config: QGConfig, args: B
 export interface FormatCommitMessageArgs {
   shortSha: string;
   coverageBefore: number | null;
-  coverageAfter: number;
+  coverageAfter: number | null;
 }
 
 export function formatCommitMessage(args: FormatCommitMessageArgs): string {
   const { shortSha, coverageBefore, coverageAfter } = args;
+  const after = coverageAfter === null ? "n/a" : `${coverageAfter}%`;
   if (coverageBefore === null) {
-    return `chore(quality-gate): bootstrap baseline @ ${shortSha} [coverage ${coverageAfter}%]`;
+    return `chore(quality-gate): bootstrap baseline @ ${shortSha} [coverage ${after}]`;
   }
-  return `chore(quality-gate): baseline @ ${shortSha} [coverage ${coverageBefore}% → ${coverageAfter}%]`;
+  return `chore(quality-gate): baseline @ ${shortSha} [coverage ${coverageBefore}% → ${after}]`;
 }
 
 export interface PushBaselineArgs {
@@ -105,13 +106,17 @@ export async function pushBaselineToOrphanBranch(args: PushBaselineArgs): Promis
     });
 
     writeFileSync(join(tempDir, "baseline.json"), JSON.stringify(payload, null, 2) + "\n");
-    mkdirSync(join(tempDir, "badges"), { recursive: true });
+    // Regenerate badges/ from scratch so a metric that flipped to _skipped (and thus
+    // produces no badge this run) doesn't leave a stale file committed on the branch.
+    const destBadges = join(tempDir, "badges");
+    rmSync(destBadges, { recursive: true, force: true });
+    mkdirSync(destBadges, { recursive: true });
     mkdirSync(join(tempDir, "history"), { recursive: true });
 
     const badgesDir = join(args.outputDir, "badges");
     if (existsSync(badgesDir)) {
       for (const f of readdirSync(badgesDir)) {
-        copyFileSync(join(badgesDir, f), join(tempDir, "badges", f));
+        copyFileSync(join(badgesDir, f), join(destBadges, f));
       }
     }
 
@@ -133,12 +138,11 @@ export async function pushBaselineToOrphanBranch(args: PushBaselineArgs): Promis
       return { pushed: false, reason: "no changes" };
     }
 
+    const cov = payload.metrics.coverage;
     const msg = formatCommitMessage({
       shortSha: short,
       coverageBefore,
-      coverageAfter: payload.metrics.coverage && "lines_pct" in payload.metrics.coverage
-        ? payload.metrics.coverage.lines_pct
-        : 0,
+      coverageAfter: "lines_pct" in cov ? cov.lines_pct : null,
     });
     await worktreeGit.commit(msg);
     await worktreeGit.push(args.remoteUrl, `${args.branch}:${args.branch}`);

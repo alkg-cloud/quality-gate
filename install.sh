@@ -43,6 +43,11 @@ cli="$install_dir/dist/cli.js"
 
 have node || die "node is required but was not found on PATH"
 
+# Clean up the download temp dir on any exit (RETURN traps don't fire when
+# `set -e`/`die` aborts mid-function, so use EXIT).
+_qg_tmp=""
+trap 'if [ -n "$_qg_tmp" ]; then rm -rf "$_qg_tmp"; fi' EXIT
+
 download() {
   local url="$1" dest="$2"
   if have curl; then
@@ -55,11 +60,9 @@ download() {
 }
 
 install_engine() {
-  local tmp tarball
-  tmp="$(mktemp -d)"
-  # shellcheck disable=SC2064
-  trap "rm -rf '$tmp'" RETURN
-  tarball="$tmp/qg.tar.gz"
+  local tarball
+  _qg_tmp="$(mktemp -d)"
+  tarball="$_qg_tmp/qg.tar.gz"
 
   log "fetching $QG_ARCHIVE_URL"
   download "$QG_ARCHIVE_URL" "$tarball"

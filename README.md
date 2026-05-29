@@ -27,9 +27,10 @@ curl -fsSL https://raw.githubusercontent.com/alkg-cloud/quality-gate/main/instal
 
 The script caches each ref under `$QG_HOME`, so re-running it for the same ref is a
 no-op. In GitHub Actions it appends the shim's bin dir to `$GITHUB_PATH`, so any
-**subsequent** step can call `qg-core ...` directly (pair it with `actions/cache`
-keyed on the install script for speed). Locally, follow the printed `export PATH=...`
-hint.
+**subsequent** step can call `qg-core ...` directly. For speed, pair it with
+`actions/cache` keyed on `QG_REF`; because `main` is mutable, pin `QG_REF` to a tag
+or commit SHA in CI so the cache invalidates when the engine changes (or set
+`QG_FORCE=1` to rebuild). Locally, follow the printed `export PATH=...` hint.
 
 ## CLI
 
@@ -51,6 +52,11 @@ qg-core exit-code         --report report.json
 ![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<owner>/<repo>/quality-metrics/badges/coverage.json)
 ![quality](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<owner>/<repo>/quality-metrics/badges/quality.json)
 ```
+
+A per-metric badge (`coverage.json`, `duplication.json`, `lint.json`) is only published
+when that metric is live; if a workspace marks it `_skipped`, the file is removed and its
+embed will 404. The composite `quality.json` is always published, so embed that if you
+want a badge that never breaks.
 
 ## For AI agents wiring this into a project
 
