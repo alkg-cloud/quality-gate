@@ -1,14 +1,15 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { collect } from "../collector.js";
 import { renderBadges } from "../reporter.js";
-import { pushBaselineToOrphanBranch } from "../orphan.js";
+import { pushBaselineToOrphanBranch, resolveBranch } from "../orphan.js";
+import type { QGConfig } from "../types.js";
 
 export interface UpdateBaselineArgs {
   outputDir: string;
   configPath: string;
-  branch: string;
+  branch?: string;        // explicit --branch override; falls back to config.branch
   repoPath: string;
   commitSha: string;
   ref: string;
@@ -17,6 +18,9 @@ export interface UpdateBaselineArgs {
 }
 
 export async function runUpdateBaseline(args: UpdateBaselineArgs): Promise<{ pushed: boolean; reason?: string }> {
+  const config = JSON.parse(readFileSync(args.configPath, "utf-8")) as QGConfig;
+  const branch = resolveBranch(args.branch, config);
+
   const metrics = collect(args.outputDir);
   writeFileSync(join(args.outputDir, "metrics.json"), JSON.stringify(metrics, null, 2) + "\n");
 
@@ -28,7 +32,7 @@ export async function runUpdateBaseline(args: UpdateBaselineArgs): Promise<{ pus
   return pushBaselineToOrphanBranch({
     outputDir: args.outputDir,
     configPath: args.configPath,
-    branch: args.branch,
+    branch,
     remoteUrl: args.remoteUrl,
     commitSha: args.commitSha,
     ref: args.ref,

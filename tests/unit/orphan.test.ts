@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildBaselinePayload, formatCommitMessage } from "../../src/orphan.js";
+import { buildBaselinePayload, formatCommitMessage, resolveBranch } from "../../src/orphan.js";
 import type { Metrics, QGConfig } from "../../src/types.js";
 
 const META = { adapter: "stub", adapter_version: "0.1", tools: [] as string[] };
@@ -39,6 +39,22 @@ describe("buildBaselinePayload", () => {
     expect(p.commit_sha).toBe("a".repeat(40));
     expect(p.metrics.coverage).toEqual({ lines_pct: 80, files: { "a.ts": 100 } });
     expect(p.config_snapshot.MAX_FILE_LINES).toBe(300);
+  });
+});
+
+describe("resolveBranch", () => {
+  it("prefers the explicit flag over config and default", () => {
+    const cfg = { ...config(), branch: "quality-metrics-web" };
+    expect(resolveBranch("flag-branch", cfg)).toBe("flag-branch");
+  });
+
+  it("falls back to config.branch when no flag is given", () => {
+    const cfg = { ...config(), branch: "quality-metrics-web" };
+    expect(resolveBranch(undefined, cfg)).toBe("quality-metrics-web");
+  });
+
+  it("falls back to the quality-metrics default when neither flag nor config set it", () => {
+    expect(resolveBranch(undefined, config())).toBe("quality-metrics");
   });
 });
 

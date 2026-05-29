@@ -7,6 +7,7 @@
   "properties": {
     "schema_version": { "const": 1 },
     "default_branch": { "type": "string", "minLength": 1 },
+    "branch": { "type": "string", "minLength": 1 },
     "thresholds": {
       "type": "object",
       "required": ["MAX_FILE_LINES", "MIN_NEW_FILE_COVERAGE"],

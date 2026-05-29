@@ -5,6 +5,13 @@ import { join } from "node:path";
 import { simpleGit } from "simple-git";
 import type { Baseline, Metrics, QGConfig } from "./types.js";
 
+const DEFAULT_BRANCH = "quality-metrics";
+
+/** Orphan-branch precedence: explicit --branch flag > config.branch > "quality-metrics". */
+export function resolveBranch(flagBranch: string | undefined, config: QGConfig): string {
+  return flagBranch ?? config.branch ?? DEFAULT_BRANCH;
+}
+
 export interface BuildBaselineArgs {
   commitSha: string;
   ref: string;

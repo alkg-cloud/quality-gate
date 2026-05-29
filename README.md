@@ -35,7 +35,7 @@ qg-core exit-code         --report report.json
 
 ## For AI agents wiring this into a project
 
-1. Copy `templates/quality-gate.config.json` to repo root; set `default_branch` and `adapter.name`.
+1. Copy `templates/quality-gate.config.json` to repo root; set `default_branch` and `adapter.name`. Leave `branch` as `quality-metrics` unless this is a monorepo (see below).
 2. Write a stack adapter at `./.quality-gate/adapter.sh` (and `setup.sh`, `install.sh`). It MUST satisfy the [adapter contract](./templates/adapters/README.md#adapter-contract-recap).
 3. Copy both workflow files from `templates/workflows/` into `.github/workflows/`.
 4. Add the required branch protection check: `quality-gate / quality-gate` (single-workspace default — see "Multi-workspace projects" below for monorepo check names).
@@ -47,10 +47,10 @@ The default setup assumes one workspace per repo. For monorepos with multiple wo
 
 - `quality-gate.config.json` (typically at `apps/<workspace>/quality-gate.config.json`)
 - adapter script (referenced by that config's `adapter.command`)
-- **orphan branch** — override the default via the `QG_BRANCH` env var in the workflow (e.g. `quality-metrics-web`)
-- branch-protection required check — one per workflow run / matrix slot
+- **orphan branch** — set the `branch` field in that workspace's config (e.g. `quality-metrics-web`)
+- branch-protection required check — one per workflow / matrix slot
 
-The shipped workflow templates expose `QG_BRANCH` at the workflow level (defaulting to `quality-metrics`) and pass it through to `qg-core pr` / `qg-core update-baseline` via `--branch "$QG_BRANCH"`. Either copy the workflow per workspace and set the workflow-level `QG_BRANCH` in each copy, or run one matrixed workflow and set `QG_BRANCH` **at the job level** so it can read the matrix slot:
+Orphan-branch identity lives in the config, not the workflow: the engine resolves the branch as `--branch` flag → `config.branch` → `quality-metrics` default. So pointing `qg-core` at a workspace's config is enough to target the right branch — local runs and CI stay in sync with no extra flags. Run one matrixed workflow that selects the per-workspace config:
 
 ```yaml
 jobs:
@@ -59,15 +59,19 @@ jobs:
     strategy:
       matrix:
         workspace: [api, web, mobile]
-    env:
-      QG_BRANCH: quality-metrics-${{ matrix.workspace }}   # job-level: matrix context resolves here
     steps:
-      # ... same steps as the template ...
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      # ... run the adapter (QG_CONFIG=./apps/${{ matrix.workspace }}/quality-gate.config.json) ...
+      - name: Run quality gate
+        run: npx --yes @quality-gate/core@0.1.0 pr --config ./apps/${{ matrix.workspace }}/quality-gate.config.json --output-dir ${{ runner.temp }}/qg
 ```
 
-> The `matrix` context is only available inside the job that declares `strategy.matrix`. If you put `QG_BRANCH: quality-metrics-${{ matrix.workspace }}` in the workflow-level `env:` block (as in the templates), it resolves to an empty suffix and every slot writes to the same branch — defeating the per-workspace split.
+Each workspace's config declares its own `branch`, so the matrix slot needs no branch knowledge. (Alternatively, copy the workflow per workspace and let each point at its own config.)
 
-Required-check naming follows GitHub's `<workflow_name> / <job_name>` format. With a matrix, expect names like `quality-gate / quality-gate (api)`, `quality-gate / quality-gate (web)`, etc. With separate workflow files per workspace, each workflow's `name:` becomes the prefix. Add **one required check per workspace** to branch protection.
+Required-check naming follows GitHub's `<workflow_name> / <job_name>` format. With a matrix, expect names like `quality-gate / quality-gate (api)`, `quality-gate / quality-gate (web)`, etc. With separate workflow files per workspace, each workflow's `name:` becomes the prefix. Add **one required check per workspace** to branch protection. The shipped templates key their `concurrency` group off `github.workflow`, so per-workspace workflow copies (distinct names) don't serialize against each other.
 
 Workspaces cannot share an orphan branch by subpath: the per-branch layout (`baseline.json`, `badges/`, `history/` at the branch root) is hardcoded, so each workspace needs its own branch.
 

@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "default_branch": "main",
+  "branch": "quality-metrics",
   "thresholds": {
     "MAX_FILE_LINES": 300,
     "MIN_NEW_FILE_COVERAGE": 60

@@ -7,13 +7,9 @@ permissions:
   contents: write
 
 concurrency:
-  group: quality-gate-main
+  # github.workflow keeps per-workspace workflow copies (distinct names) isolated.
+  group: ${{ github.workflow }}
   cancel-in-progress: false
-
-env:
-  # Orphan branch holding the baseline. Override per workspace in monorepos
-  # (e.g. quality-metrics-web). See README -> "Multi-workspace projects".
-  QG_BRANCH: quality-metrics
 
 jobs:
   update-baseline:
@@ -38,6 +34,6 @@ jobs:
           QG_CONFIG: ./quality-gate.config.json
 
       - name: Update baseline on orphan branch
-        run: npx --yes @quality-gate/core@0.1.0 update-baseline --config ./quality-gate.config.json --output-dir ${{ runner.temp }}/qg --branch "$QG_BRANCH"
+        run: npx --yes @quality-gate/core@0.1.0 update-baseline --config ./quality-gate.config.json --output-dir ${{ runner.temp }}/qg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

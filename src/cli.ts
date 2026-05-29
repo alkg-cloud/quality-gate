@@ -89,9 +89,9 @@ program.command("pr")
   .description("Run PR-mode gate: collect → compare → report → badges → exit code")
   .requiredOption("--config <path>")
   .requiredOption("--output-dir <dir>")
-  .option("--branch <name>", "orphan branch name", "quality-metrics")
+  .option("--branch <name>", "orphan branch name (overrides config.branch; default quality-metrics)")
   .option("--repo-path <dir>", "project repo path", process.cwd())
-  .action(async (opts: { config: string; outputDir: string; branch: string; repoPath: string }) => {
+  .action(async (opts: { config: string; outputDir: string; branch?: string; repoPath: string }) => {
     const { runPr } = await import("./commands/pr.js");
     const { gatePassed } = await runPr({
       configPath: opts.config, outputDir: opts.outputDir, branch: opts.branch, repoPath: opts.repoPath,
@@ -103,10 +103,10 @@ program.command("update-baseline")
   .description("Update the orphan branch with a new baseline after main-branch merge")
   .requiredOption("--config <path>")
   .requiredOption("--output-dir <dir>")
-  .option("--branch <name>", "orphan branch name", "quality-metrics")
+  .option("--branch <name>", "orphan branch name (overrides config.branch; default quality-metrics)")
   .option("--repo-path <dir>", "project repo path", process.cwd())
   .option("--readme-template <path>", "orphan branch README template", "")
-  .action(async (opts: { config: string; outputDir: string; branch: string; repoPath: string; readmeTemplate: string }) => {
+  .action(async (opts: { config: string; outputDir: string; branch?: string; repoPath: string; readmeTemplate: string }) => {
     const { runUpdateBaseline } = await import("./commands/update-baseline.js");
     const token = process.env.GITHUB_TOKEN;
     const repo  = process.env.GITHUB_REPOSITORY;
