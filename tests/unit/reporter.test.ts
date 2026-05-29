@@ -118,4 +118,37 @@ describe("renderBadges", () => {
     const badges = renderBadges(cleanMetrics());
     expect(Object.keys(badges).sort()).toEqual(["coverage.json", "duplication.json", "lint.json", "quality.json"]);
   });
+
+  it("emits only present badges when coverage and duplication are _skipped", () => {
+    const m = cleanMetrics();
+    m.coverage = { _skipped: "no simplecov" };
+    m.duplication = { _skipped: "no flay" };
+    const badges = renderBadges(m);
+    expect(Object.keys(badges).sort()).toEqual(["lint.json", "quality.json"]);
+    const q = JSON.parse(badges["quality.json"]!) as BadgeJson;
+    expect(q.color).toBe("brightgreen"); // lint total 0 → brightgreen drives composite
+    expect(q.message).toBe("passing");
+  });
+
+  it("composite reflects the worst present metric when some are _skipped", () => {
+    const m = cleanMetrics();
+    m.coverage = { _skipped: "n/a" };
+    m.duplication = { _skipped: "n/a" };
+    m.lint = { total: 25, by_file: { "a.ts": 25 } }; // orange
+    const q = JSON.parse(renderBadges(m)["quality.json"]!) as BadgeJson;
+    expect(q.color).toBe("orange");
+    expect(q.message).toBe("issues");
+  });
+
+  it("does not throw and emits n/a quality when all badge metrics are _skipped", () => {
+    const m = cleanMetrics();
+    m.coverage = { _skipped: "n/a" };
+    m.duplication = { _skipped: "n/a" };
+    m.lint = { _skipped: "n/a" };
+    const badges = renderBadges(m);
+    expect(Object.keys(badges)).toEqual(["quality.json"]);
+    const q = JSON.parse(badges["quality.json"]!) as BadgeJson;
+    expect(q.color).toBe("lightgrey");
+    expect(q.message).toBe("n/a");
+  });
 });

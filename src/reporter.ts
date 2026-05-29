@@ -146,19 +146,35 @@ function shields(label: string, message: string, color: string): string {
   return JSON.stringify({ schemaVersion: 1, label, message, color }, null, 2) + "\n";
 }
 
+// A _skipped metric is a first-class, non-fatal state (adapter contract §5.4): emit a
+// badge only for each metric that produced data, and derive the composite quality badge
+// from whatever is present. Callers just write whatever map is returned.
 export function renderBadges(pr: Metrics): Record<string, string> {
-  if (!("lines_pct" in pr.coverage) || !("pct" in pr.duplication) || !("total" in pr.lint)) {
-    throw new Error("renderBadges requires non-skipped coverage, duplication, and lint metrics");
+  const badges: Record<string, string> = {};
+  const colors: string[] = [];
+
+  if ("lines_pct" in pr.coverage) {
+    const c = coverageColor(pr.coverage.lines_pct);
+    colors.push(c);
+    badges["coverage.json"] = shields("coverage", `${pr.coverage.lines_pct}%`, c);
   }
-  const covColor = coverageColor(pr.coverage.lines_pct);
-  const dupColor = duplicationColor(pr.duplication.pct);
-  const lintC = lintColor(pr.lint.total);
+  if ("pct" in pr.duplication) {
+    const c = duplicationColor(pr.duplication.pct);
+    colors.push(c);
+    badges["duplication.json"] = shields("duplication", `${pr.duplication.pct}%`, c);
+  }
+  if ("total" in pr.lint) {
+    const c = lintColor(pr.lint.total);
+    colors.push(c);
+    badges["lint.json"] = shields("lint", String(pr.lint.total), c);
+  }
+
   const rank: Record<string, number> = { brightgreen: 0, yellowgreen: 1, yellow: 2, orange: 3, red: 4 };
-  const composite = [covColor, dupColor, lintC].reduce((a, b) => ((rank[a] ?? 4) >= (rank[b] ?? 4) ? a : b));
-  return {
-    "coverage.json":    shields("coverage", `${pr.coverage.lines_pct}%`, covColor),
-    "duplication.json": shields("duplication", `${pr.duplication.pct}%`, dupColor),
-    "lint.json":        shields("lint", String(pr.lint.total), lintC),
-    "quality.json":     shields("quality", composite === "brightgreen" ? "passing" : "issues", composite),
-  };
+  if (colors.length > 0) {
+    const composite = colors.reduce((a, b) => ((rank[a] ?? 4) >= (rank[b] ?? 4) ? a : b));
+    badges["quality.json"] = shields("quality", composite === "brightgreen" ? "passing" : "issues", composite);
+  } else {
+    badges["quality.json"] = shields("quality", "n/a", "lightgrey");
+  }
+  return badges;
 }
