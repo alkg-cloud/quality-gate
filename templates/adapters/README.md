@@ -1,6 +1,6 @@
 # Quality Gate adapter templates
 
-This directory contains reference adapter scripts. Each one is a self-contained shell + jq pipeline that satisfies the [adapter contract](../../../docs/superpowers/specs/2026-05-27-quality-gate-design.md#5-adapter-contract):
+This directory contains reference adapter scripts. Each one is a self-contained shell + jq pipeline that satisfies the [adapter contract](#adapter-contract-recap) (recap below):
 
 > "An adapter is any executable program that reads environment variables and writes canonical JSON files to an output directory."
 
