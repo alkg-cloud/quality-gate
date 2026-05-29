@@ -20,6 +20,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
 
+      - name: Install quality-gate engine
+        run: curl -fsSL https://raw.githubusercontent.com/alkg-cloud/quality-gate/main/install.sh | bash
+        env:
+          # Pin a tag or commit SHA for reproducible CI; defaults to main.
+          QG_REF: main
+
       - name: Read adapter command from config
         id: cfg
         run: |
@@ -34,6 +40,6 @@ jobs:
           QG_CONFIG: ./quality-gate.config.json
 
       - name: Update baseline on orphan branch
-        run: npx --yes @quality-gate/core@0.1.0 update-baseline --config ./quality-gate.config.json --output-dir ${{ runner.temp }}/qg
+        run: qg-core update-baseline --config ./quality-gate.config.json --output-dir ${{ runner.temp }}/qg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
