@@ -64,7 +64,9 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
-      # ... run the adapter (QG_CONFIG=./apps/${{ matrix.workspace }}/quality-gate.config.json) ...
+      # Copy the "Read adapter command from config" + "Run adapter" steps from the
+      # PR template here, passing QG_CONFIG=./apps/${{ matrix.workspace }}/quality-gate.config.json
+      # so the adapter writes metrics before the gate runs.
       - name: Run quality gate
         run: npx --yes @quality-gate/core@0.1.0 pr --config ./apps/${{ matrix.workspace }}/quality-gate.config.json --output-dir ${{ runner.temp }}/qg
 ```

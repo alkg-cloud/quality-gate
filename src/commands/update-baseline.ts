@@ -31,7 +31,7 @@ export async function runUpdateBaseline(args: UpdateBaselineArgs): Promise<{ pus
 
   return pushBaselineToOrphanBranch({
     outputDir: args.outputDir,
-    configPath: args.configPath,
+    config,
     branch,
     remoteUrl: args.remoteUrl,
     commitSha: args.commitSha,

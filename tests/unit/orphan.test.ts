@@ -56,6 +56,11 @@ describe("resolveBranch", () => {
   it("falls back to the quality-metrics default when neither flag nor config set it", () => {
     expect(resolveBranch(undefined, config())).toBe("quality-metrics");
   });
+
+  it("treats an empty flag or empty config.branch as unset", () => {
+    expect(resolveBranch("", { ...config(), branch: "quality-metrics-web" })).toBe("quality-metrics-web");
+    expect(resolveBranch(undefined, { ...config(), branch: "" })).toBe("quality-metrics");
+  });
 });
 
 describe("formatCommitMessage", () => {
