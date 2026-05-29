@@ -10,6 +10,11 @@ concurrency:
   group: quality-gate-main
   cancel-in-progress: false
 
+env:
+  # Orphan branch holding the baseline. Override per workspace in monorepos
+  # (e.g. quality-metrics-web). See README -> "Multi-workspace projects".
+  QG_BRANCH: quality-metrics
+
 jobs:
   update-baseline:
     runs-on: ubuntu-latest
@@ -33,6 +38,6 @@ jobs:
           QG_CONFIG: ./quality-gate.config.json
 
       - name: Update baseline on orphan branch
-        run: npx --yes @quality-gate/core@0.1.0 update-baseline --config ./quality-gate.config.json --output-dir ${{ runner.temp }}/qg
+        run: npx --yes @quality-gate/core@0.1.0 update-baseline --config ./quality-gate.config.json --output-dir ${{ runner.temp }}/qg --branch "$QG_BRANCH"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
