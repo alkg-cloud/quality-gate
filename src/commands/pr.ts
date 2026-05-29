@@ -5,17 +5,19 @@ import { simpleGit } from "simple-git";
 import { collect } from "../collector.js";
 import { compare } from "../comparator.js";
 import { renderBadges, renderPrComment } from "../reporter.js";
+import { resolveBranch } from "../orphan.js";
 import type { Baseline, QGConfig } from "../types.js";
 
 export interface PrCommandArgs {
   outputDir: string;
   configPath: string;
-  branch: string;         // orphan branch, e.g. "quality-metrics"
+  branch?: string;        // explicit --branch override; falls back to config.branch
   repoPath: string;       // project root
 }
 
 export async function runPr(args: PrCommandArgs): Promise<{ gatePassed: boolean }> {
   const config = JSON.parse(readFileSync(args.configPath, "utf-8")) as QGConfig;
+  const branch = resolveBranch(args.branch, config);
 
   const metrics = collect(args.outputDir);
   const metricsPath = join(args.outputDir, "metrics.json");
@@ -25,10 +27,10 @@ export async function runPr(args: PrCommandArgs): Promise<{ gatePassed: boolean 
   let baseline: Baseline | null = null;
   try {
     const git = simpleGit(args.repoPath);
-    const remotes = await git.listRemote(["--heads", "origin", args.branch]);
-    if (remotes.includes(`refs/heads/${args.branch}`)) {
-      await git.fetch("origin", `${args.branch}:refs/remotes/origin/${args.branch}`);
-      const text = await git.show([`origin/${args.branch}:baseline.json`]);
+    const remotes = await git.listRemote(["--heads", "origin", branch]);
+    if (remotes.includes(`refs/heads/${branch}`)) {
+      await git.fetch("origin", `${branch}:refs/remotes/origin/${branch}`);
+      const text = await git.show([`origin/${branch}:baseline.json`]);
       baseline = JSON.parse(text) as Baseline;
       writeFileSync(join(args.outputDir, "baseline.json"), text);
     } else {

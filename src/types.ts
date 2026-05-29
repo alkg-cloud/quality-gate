@@ -66,6 +66,8 @@ export interface SecurityConfig {
 export interface QGConfig {
   schema_version: 1;
   default_branch: string;
+  /** Orphan branch holding the baseline. Defaults to "quality-metrics"; set per workspace in monorepos. */
+  branch?: string;
   thresholds: {
     MAX_FILE_LINES: number;
     MIN_NEW_FILE_COVERAGE: number;

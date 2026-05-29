@@ -5,6 +5,14 @@ import { join } from "node:path";
 import { simpleGit } from "simple-git";
 import type { Baseline, Metrics, QGConfig } from "./types.js";
 
+const DEFAULT_BRANCH = "quality-metrics";
+
+/** Orphan-branch precedence: explicit --branch flag > config.branch > "quality-metrics".
+ *  Empty strings count as unset so a blank flag/config falls through to the default. */
+export function resolveBranch(flagBranch: string | undefined, config: QGConfig): string {
+  return flagBranch || config.branch || DEFAULT_BRANCH;
+}
+
 export interface BuildBaselineArgs {
   commitSha: string;
   ref: string;
@@ -49,7 +57,7 @@ export function formatCommitMessage(args: FormatCommitMessageArgs): string {
 
 export interface PushBaselineArgs {
   outputDir: string;       // contains metrics.json, badges/, etc. produced by adapter+pipeline
-  configPath: string;
+  config: QGConfig;
   branch: string;          // e.g. "quality-metrics"
   remoteUrl: string;       // e.g. `https://x-access-token:${token}@github.com/${repo}.git`
   commitSha: string;
@@ -89,11 +97,10 @@ export async function pushBaselineToOrphanBranch(args: PushBaselineArgs): Promis
       }
     }
 
-    // Read fresh metrics + config
+    // Read fresh metrics
     const metricsPath = join(args.outputDir, "metrics.json");
     const metricsData = JSON.parse(await readFile(metricsPath, "utf-8")) as Metrics;
-    const configData = JSON.parse(await readFile(args.configPath, "utf-8")) as QGConfig;
-    const payload = buildBaselinePayload(metricsData, configData, {
+    const payload = buildBaselinePayload(metricsData, args.config, {
       commitSha: args.commitSha, ref: args.ref,
     });
 
