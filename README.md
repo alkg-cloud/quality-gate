@@ -90,6 +90,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - name: Install quality-gate engine
+        shell: bash   # bash -o pipefail: a failed curl fails the step instead of passing green
         run: curl -fsSL https://raw.githubusercontent.com/alkg-cloud/quality-gate/main/install.sh | bash
         env:
           QG_REF: main   # pin a tag/sha for reproducible CI
