@@ -69,6 +69,7 @@ want a badge that never breaks.
 3. Copy both workflow files from `templates/workflows/` into `.github/workflows/`. They install the engine via the `curl … install.sh | bash` step above (no npm registry needed) and then call the `qg-core` shim.
 4. Add the required branch protection check: `quality-gate / quality-gate` (single-workspace default — see "Multi-workspace projects" below for monorepo check names).
 5. Open the first PR. It bootstraps; merging it creates the orphan branch.
+6. *(Optional)* For secret scanning, copy `templates/workflows/secret-scan.yml` — a license-free gitleaks workflow that runs as a **separate** check (the gate's `security` metric covers dependency advisories, not committed secrets). See [ADOPT.md](./ADOPT.md#optional--secret-scanning-separate-from-the-gate).
 
 ## Multi-workspace projects (monorepos)
 

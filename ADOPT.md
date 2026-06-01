@@ -162,6 +162,28 @@ Then report back to the human — these require admin and an explicit decision:
 2. **Merge** the bootstrap PR. Merging creates the orphan branch (default
    `quality-metrics`) and the first baseline. Do not merge without authorization.
 
+## Optional — secret scanning (separate from the gate)
+
+The engine's `security` metric scans **dependency advisories** (npm/bundler/cargo
+audit), **not committed secrets**. If the target repo also wants secret scanning,
+do **not** reach for `gitleaks/gitleaks-action@v2` — it requires a **paid license**
+for organization-owned repos and fails every PR with `License key is required`.
+Use the MIT-licensed gitleaks **CLI** instead.
+
+Copy `templates/workflows/secret-scan.yml` into the target repo's
+`.github/workflows/`. It installs a pinned gitleaks binary and scans the working
+tree on every PR — fully free, no secret/license needed. Notes:
+
+- It is a **standalone** check, independent of the quality gate. Add its required
+  branch-protection check **`Security / secret-scan`** in addition to the gate's
+  `quality-gate / quality-gate`.
+- It scans the checked-out files (`gitleaks dir`). To scan the PR's commit history
+  instead, switch to `gitleaks git` and set `fetch-depth: 0` in the checkout.
+- **Pin/bump `GITLEAKS_VERSION` deliberately** — the version in the template will
+  go stale; treat it as something the adopting repo owns.
+- Want findings in the GitHub Security tab? Add `--report-format sarif
+  --report-path results.sarif` and upload with `github/codeql-action/upload-sarif`.
+
 ## Guardrails (apply throughout)
 
 - Do not modify the engine repo, the copied workflow logic, or the schemas.
